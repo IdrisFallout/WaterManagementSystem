@@ -4,3 +4,5 @@ API_KEY_GENERATION.py
 api.key
 server.crt
 /server.key
+classes.py
+test.cmd

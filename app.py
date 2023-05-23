@@ -18,15 +18,19 @@ db = SQLAlchemy(app)
 app.app_context().push()
 
 
+class APIKey(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(32), unique=True)
+
+
 # generate an API key
 @app.route('/generate-api-key', methods=['GET'])
 def generate_api_key():
     api_key = secrets.token_hex(16)
-    print(api_key)
-    # print the IP address of the client
-    print("CLIENT: " + request.remote_addr)
-    # Perform further processing with the generated API key
-    return 'API Key generated.'
+    new_api_key = APIKey(key=api_key)
+    db.session.add(new_api_key)
+    db.session.commit()
+    return 'API Key generated and stored in the database.'
 
 
 if __name__ == '__main__':
