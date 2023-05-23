@@ -1,2 +1,6 @@
 .idea
 API_KEY_GENERATION.py
+/models/device.py
+api.key
+server.crt
+/server.key
