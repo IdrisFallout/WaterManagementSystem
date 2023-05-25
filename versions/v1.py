@@ -3,7 +3,6 @@ import psycopg2
 
 api_v1 = Blueprint('api_v1', __name__)
 
-
 conn = psycopg2.connect(
     database="watermanagementsystem",
     user="idrisfallout",
