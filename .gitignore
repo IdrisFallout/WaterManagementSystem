@@ -6,3 +6,4 @@ server.crt
 /server.key
 classes.py
 test.cmd
+test.py

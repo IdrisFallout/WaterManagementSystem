@@ -1,5 +1,6 @@
-from flask import Blueprint, request, abort
+from flask import Blueprint, request, abort, jsonify
 import psycopg2
+import requests
 
 api_v1 = Blueprint('api_v1', __name__)
 
@@ -11,8 +12,27 @@ conn = psycopg2.connect(
     port="5432"
 )
 
+# Replace with your actual M-Pesa API credentials
+consumer_key = "4IewHc4m1sHEvGp92vvszuvFxzhPLxeF"
+consumer_secret = "6A8jzT4ls55N27Fo"
+shortcode = ""
+passkey = ""
+initiator_name = ""
 
-# require API key for all routes in this blueprint
+# Replace with the appropriate API endpoints
+access_token_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
+lipa_na_mpesa_online_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+
+
+# Generate access token
+def generate_access_token():
+    response = requests.get(access_token_url, auth=(consumer_key, consumer_secret))
+    if response.status_code == 200:
+        return response.json()['access_token']
+    else:
+        return f"Request failed with status code {response.status_code}: {response.reason}"
+
+
 @api_v1.before_request
 def before_request():
     cursor = conn.cursor()
@@ -31,4 +51,27 @@ def before_request():
 
 @api_v1.route('/resource', methods=['GET'])
 def get_resource():
-    return 'Version 1 of the resource'
+    return 'Version 1 of the resource. Here is your access token: ' + generate_access_token()
+
+
+# Make an M-Pesa STK Push request
+def lipa_na_mpesa_online(access_token, phone_number, amount):
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "BusinessShortCode": shortcode,
+        "Password": passkey,
+        "Timestamp": "yyyyMMddHHmmss",
+        "TransactionType": "CustomerPayBillOnline",
+        "Amount": amount,
+        "PartyA": phone_number,
+        "PartyB": shortcode,
+        "PhoneNumber": phone_number,
+        "CallBackURL": "YOUR_CALLBACK_URL",
+        "AccountReference": "YOUR_ACCOUNT_REFERENCE",
+        "TransactionDesc": "YOUR_TRANSACTION_DESCRIPTION"
+    }
+    response = requests.post(lipa_na_mpesa_online_url, json=payload, headers=headers)
+    return response.json()
