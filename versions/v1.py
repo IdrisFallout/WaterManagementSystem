@@ -1,6 +1,6 @@
-from flask import Blueprint, request, abort, jsonify
 import psycopg2
 import requests
+from flask import Blueprint, request, abort
 
 api_v1 = Blueprint('api_v1', __name__)
 
@@ -12,12 +12,12 @@ conn = psycopg2.connect(
     port="5432"
 )
 
-# Replace with your actual M-Pesa API credentials
+# Replace with your actual M-Pesa API credential
 consumer_key = "4IewHc4m1sHEvGp92vvszuvFxzhPLxeF"
 consumer_secret = "6A8jzT4ls55N27Fo"
 shortcode = ""
 passkey = ""
-initiator_name = ""
+initiator_name = "testapi"
 
 # Replace with the appropriate API endpoints
 access_token_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
