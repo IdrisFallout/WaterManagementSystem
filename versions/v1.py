@@ -1,3 +1,6 @@
+import base64
+from datetime import datetime
+
 import psycopg2
 import requests
 from flask import Blueprint, request, abort
@@ -15,8 +18,8 @@ conn = psycopg2.connect(
 # Replace with your actual M-Pesa API credential
 consumer_key = "4IewHc4m1sHEvGp92vvszuvFxzhPLxeF"
 consumer_secret = "6A8jzT4ls55N27Fo"
-shortcode = ""
-passkey = ""
+shortcode = "174379"
+passkey = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
 initiator_name = "testapi"
 
 # Replace with the appropriate API endpoints
@@ -58,18 +61,32 @@ def lipa_na_mpesa_online(access_token, phone_number, amount):
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
+
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+
     payload = {
         "BusinessShortCode": shortcode,
-        "Password": passkey,
-        "Timestamp": "yyyyMMddHHmmss",
+        "Password": base64.b64encode(f"{shortcode}{passkey}{timestamp}".encode()).decode(),
+        "Timestamp": timestamp,
         "TransactionType": "CustomerPayBillOnline",
         "Amount": amount,
         "PartyA": phone_number,
         "PartyB": shortcode,
         "PhoneNumber": phone_number,
-        "CallBackURL": "YOUR_CALLBACK_URL",
-        "AccountReference": "YOUR_ACCOUNT_REFERENCE",
-        "TransactionDesc": "YOUR_TRANSACTION_DESCRIPTION"
+        "CallBackURL": "https://mydomain.com/pat",
+        "AccountReference": "CompanyXLTD",
+        "TransactionDesc": "Payment of X"
     }
     response = requests.post(lipa_na_mpesa_online_url, json=payload, headers=headers)
+    print(payload)
     return response.json()
+
+
+@api_v1.route('/lipa', methods=['POST'])
+def lipa():
+    access_token = generate_access_token()
+    phone_number = request.json['PhoneNumber']
+    amount = request.json['Amount']
+    response = lipa_na_mpesa_online(access_token, phone_number, amount)
+    # print(f"Access token: {access_token}\nPhone number: {phone_number}\nAmount: {amount}")
+    return response
