@@ -46,8 +46,6 @@ def before_request():
     if api_key not in [key for _, key in data]:
         abort(401)  # Unauthorized
 
-    # return 'API key is valid'
-
 
 @api_v1.route('/resource', methods=['GET'])
 def get_resource():
