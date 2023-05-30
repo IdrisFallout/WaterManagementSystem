@@ -18,7 +18,7 @@ conn = psycopg2.connect(
 # Replace with your actual M-Pesa API credential
 consumer_key = "4IewHc4m1sHEvGp92vvszuvFxzhPLxeF"
 consumer_secret = "6A8jzT4ls55N27Fo"
-shortcode = "174379"
+shortcode = "6265952"    #174379 / 8362942 / 6265952
 passkey = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
 initiator_name = "testapi"
 
@@ -68,17 +68,16 @@ def lipa_na_mpesa_online(access_token, phone_number, amount):
         "BusinessShortCode": shortcode,
         "Password": base64.b64encode(f"{shortcode}{passkey}{timestamp}".encode()).decode(),
         "Timestamp": timestamp,
-        "TransactionType": "CustomerPayBillOnline",
+        "TransactionType": "CustomerBuyGoodsOnline",
         "Amount": amount,
         "PartyA": phone_number,
         "PartyB": shortcode,
         "PhoneNumber": phone_number,
-        "CallBackURL": "https://mydomain.com/pat",
-        "AccountReference": "CompanyXLTD",
-        "TransactionDesc": "Payment of X"
+        "CallBackURL": "https://g2f-connect.onrender.com",
+        "AccountReference": "N/A",
+        "TransactionDesc": f"Payment of KSH {amount} to {shortcode} by {phone_number}"
     }
     response = requests.post(lipa_na_mpesa_online_url, json=payload, headers=headers)
-    print(payload)
     return response.json()
 
 
@@ -88,5 +87,4 @@ def lipa():
     phone_number = request.json['PhoneNumber']
     amount = request.json['Amount']
     response = lipa_na_mpesa_online(access_token, phone_number, amount)
-    # print(f"Access token: {access_token}\nPhone number: {phone_number}\nAmount: {amount}")
     return response
