@@ -3,7 +3,10 @@ from datetime import datetime
 
 import psycopg2
 import requests
+from Crypto.PublicKey import RSA
 from flask import Blueprint, request, abort
+
+import random
 
 api_v1 = Blueprint('api_v1', __name__)
 
@@ -15,25 +18,18 @@ conn = psycopg2.connect(
     port="5432"
 )
 
+base_url = "https://e3d9-197-232-131-204.ngrok-free.app/api/v1"
+
 # Replace with your actual M-Pesa API credential
 consumer_key = "4IewHc4m1sHEvGp92vvszuvFxzhPLxeF"
 consumer_secret = "6A8jzT4ls55N27Fo"
-shortcode = "247247"  # 174379 / 8362942 / 6265952 / 247247
+shortcode = "174379"  # 174379 / 8362942 / 6265952 / 247247
 passkey = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
 initiator_name = "testapi"
 
 # Replace with the appropriate API endpoints
 access_token_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
 lipa_na_mpesa_online_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
-
-
-# Generate access token
-def generate_access_token():
-    response = requests.get(access_token_url, auth=(consumer_key, consumer_secret))
-    if response.status_code == 200:
-        return response.json()['access_token']
-    else:
-        return f"Request failed with status code {response.status_code}: {response.reason}"
 
 
 # @api_v1.before_request
@@ -50,9 +46,21 @@ def before_request():
         abort(401)  # Unauthorized
 
 
+# AUTHORIZATION API
+def generate_access_token():
+    response = requests.get(access_token_url, auth=(consumer_key, consumer_secret))
+    if response.status_code == 200:
+        return response.json()['access_token']
+    else:
+        return f"Request failed with status code {response.status_code}: {response.reason}"
+
+
 @api_v1.route('/resource', methods=['GET'])
 def get_resource():
-    return 'Version 1 of the resource. Here is your access token: ' + generate_access_token()
+    public_key_path = 'venv/Lib/site-packages/certifi/cacert.pem'
+    with open(public_key_path, "rb") as key_file:
+        public_key = RSA.import_key(key_file.read())
+    return public_key
 
 
 # Make an M-Pesa STK Push request
@@ -73,11 +81,11 @@ def lipa_na_mpesa_online(access_token, phone_number, amount):
         "PartyA": phone_number,
         "PartyB": shortcode,
         "PhoneNumber": phone_number,
-        "CallBackURL": "https://g2f-connect.onrender.com",
-        "AccountReference": "254765566365",
+        "CallBackURL": "https://e3d9-197-232-131-204.ngrok-free.app/api/v1/confirmation",
+        "AccountReference": "254765566365",  # CompanyXLTD
         "TransactionDesc": f"Payment of KSH {amount} to {shortcode} by {phone_number}"
     }
-    response = requests.post(lipa_na_mpesa_online_url, json=payload, headers=headers)
+    response = requests.post(lipa_na_mpesa_online_url, json=payload, headers=headers, verify=False)
     return response.json()
 
 
@@ -90,6 +98,39 @@ def lipa():
     return response
 
 
+@api_v1.route('/register_urls', methods=['POST'])
+def register_urls():
+    mpesa_endpoint = "https://sandbox.safaricom.co.ke/mpesa/c2b/v1/registerurl"
+    headers = {"Authorization": f"Bearer {generate_access_token()}"}
+    payload = {
+        "ShortCode": shortcode,
+        "ResponseType": "Completed",
+        "ConfirmationURL": f"{base_url}/confirmation",
+        "ValidationURL": f"{base_url}/validation"
+    }
+    response = requests.post(mpesa_endpoint, json=payload, headers=headers)
+    return response.json()
+
+
+# ACCOUNT BALANCE API
+@api_v1.route('/account_balance', methods=['GET'])
+def account_balance():
+    mpesa_endpoint = "https://sandbox.safaricom.co.ke/mpesa/accountbalance/v1/query"
+    headers = {"Authorization": f"Bearer {generate_access_token()}"}
+    payload = {
+        "Initiator": initiator_name,
+        "SecurityCredential": "jL/C5aM4wjaLPnKC/HCWiOesJEZ3Lxv2S0z+3ynPWdljlGU3LWH5Sn4D47pskOqdNjbhsPhta48we1JCgp7hclcnUMrKWytC6xnATW0wV36LJz6XOKiCYW64iNVRsLkxrag2zBToLbFBmJP6P/InvFjJAfBB2Mo2U0pZVleVyr/JndnOmJofTvBYkz8G2OmdngjU0TKdrUlQRdHNEq0inTANFBr5kkKQBDE/z6NA6qUVaJnsUw+55pn1XiITelqf/J4UFqkrXY3u1vf07qrUTXfZINHbU+C/j5ak4XPAs2VtXlEsQ3cEgwFyLnhNlFwg5lOlj9Q6mq1tlE3a3HfxRA==",
+        "CommandID": "AccountBalance",
+        "PartyA": shortcode,
+        "IdentifierType": "4",
+        "Remarks": "done!",
+        "QueueTimeOutURL": f"{base_url}/AccountBalance/queue",
+        "ResultURL": f"{base_url}/AccountBalance/result"
+    }
+    response = requests.post(mpesa_endpoint, json=payload, headers=headers)
+    return response.json()
+
+
 @api_v1.route('/confirmation', methods=['POST'])
 def confirmation():
     print(request.json)
@@ -100,3 +141,40 @@ def confirmation():
 def validation():
     print(request.json)
     return request.json
+
+
+@api_v1.route('/AccountBalance/queue', methods=['POST'])
+def queue():
+    print(request.json)
+    return request.json
+
+
+@api_v1.route('/AccountBalance/result', methods=['POST'])
+def result():
+    print(request.json)
+    return request.json
+
+
+# generate token function takes in phone number and amount as parameters and outputs a 20 numerical digits number
+def generate_token(meter_number, amount, phone_number):
+    # Generate a random number
+    random_number = random.randint(1000, 9999)
+
+    # Combine the meter number and random number
+    combined_string = str(meter_number) + str(random_number)
+
+    # Calculate a simple checksum (optional)
+    checksum = sum(map(int, combined_string)) % 10
+
+    # Create the final token by appending the checksum to the combined string
+    token = combined_string + str(checksum)
+
+    return token
+
+
+@api_v1.route('/generate_token_number', methods=['POST'])
+def generate_token_number():
+    phone_number = request.json['PhoneNumber']
+    amount = request.json['Amount']
+    meter_number = request.json['MeterNumber']
+    return generate_token(meter_number, amount, phone_number)
