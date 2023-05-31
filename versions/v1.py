@@ -18,7 +18,7 @@ conn = psycopg2.connect(
 # Replace with your actual M-Pesa API credential
 consumer_key = "4IewHc4m1sHEvGp92vvszuvFxzhPLxeF"
 consumer_secret = "6A8jzT4ls55N27Fo"
-shortcode = "174379"    #174379 / 8362942 / 6265952
+shortcode = "247247"  # 174379 / 8362942 / 6265952 / 247247
 passkey = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
 initiator_name = "testapi"
 
@@ -36,7 +36,7 @@ def generate_access_token():
         return f"Request failed with status code {response.status_code}: {response.reason}"
 
 
-@api_v1.before_request
+# @api_v1.before_request
 def before_request():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM api_key")
@@ -74,7 +74,7 @@ def lipa_na_mpesa_online(access_token, phone_number, amount):
         "PartyB": shortcode,
         "PhoneNumber": phone_number,
         "CallBackURL": "https://g2f-connect.onrender.com",
-        "AccountReference": "CompanyXLTD",
+        "AccountReference": "254765566365",
         "TransactionDesc": f"Payment of KSH {amount} to {shortcode} by {phone_number}"
     }
     response = requests.post(lipa_na_mpesa_online_url, json=payload, headers=headers)
@@ -88,3 +88,15 @@ def lipa():
     amount = request.json['Amount']
     response = lipa_na_mpesa_online(access_token, phone_number, amount)
     return response
+
+
+@api_v1.route('/confirmation', methods=['POST'])
+def confirmation():
+    print(request.json)
+    return request.json
+
+
+@api_v1.route('/validation', methods=['POST'])
+def validation():
+    print(request.json)
+    return request.json
