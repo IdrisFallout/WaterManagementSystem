@@ -57,10 +57,10 @@ def generate_access_token():
 
 @api_v1.route('/resource', methods=['GET'])
 def get_resource():
-    public_key_path = 'venv/Lib/site-packages/certifi/cacert.pem'
-    with open(public_key_path, "rb") as key_file:
-        public_key = RSA.import_key(key_file.read())
-    return public_key
+    # public_key_path = 'venv/Lib/site-packages/certifi/cacert.pem'
+    # with open(public_key_path, "rb") as key_file:
+    #     public_key = RSA.import_key(key_file.read())
+    return "public_key"
 
 
 # Make an M-Pesa STK Push request
