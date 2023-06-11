@@ -11,10 +11,10 @@ import random
 api_v1 = Blueprint('api_v1', __name__)
 
 conn = psycopg2.connect(
-    database="watermanagementsystem",
-    user="idrisfallout",
-    password="xxVkKFJt0tilbf6cyL7naRjreNlAz1rI",
-    host="dpg-chlqusbhp8uej745khj0-a.oregon-postgres.render.com",
+    database="<database_name>",
+    user="<user>",
+    password="<put_your_password_here>",
+    host="<host>",
     port="5432"
 )
 
