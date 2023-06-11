@@ -156,20 +156,10 @@ def result():
 
 
 # generate token function takes in phone number and amount as parameters and outputs a 20 numerical digits number
-def generate_token(meter_number, amount, phone_number):
-    # Generate a random number
-    random_number = random.randint(1000, 9999)
-
-    # Combine the meter number and random number
-    combined_string = str(meter_number) + str(random_number)
-
-    # Calculate a simple checksum (optional)
-    checksum = sum(map(int, combined_string)) % 10
-
-    # Create the final token by appending the checksum to the combined string
-    token = combined_string + str(checksum)
-
-    return token
+def generate_token(meter_number, amount, phone_number, timestamp):
+    token = f"{meter_number}-{amount}-{phone_number}-{timestamp}"
+    count = len(token)
+    return token + "-" + str(count - 3)
 
 
 @api_v1.route('/generate_token_number', methods=['POST'])
@@ -177,4 +167,6 @@ def generate_token_number():
     phone_number = request.json['PhoneNumber']
     amount = request.json['Amount']
     meter_number = request.json['MeterNumber']
-    return generate_token(meter_number, amount, phone_number)
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    # secret_key = it is unique for every meter number, retrieve from the database
+    return generate_token(meter_number, amount, phone_number, timestamp)
